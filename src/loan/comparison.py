@@ -1,6 +1,6 @@
 from decimal import Decimal, getcontext
 
-from loan.models import Comparison, LoanRequest
+from loan.models import Comparison, LoanRequest, VariableRateComparison
 from loan.strategies import STRATEGIES
 
 getcontext().prec = 28
@@ -39,5 +39,41 @@ def build_comparison(request: LoanRequest) -> Comparison:
         equal_installment=ei_schedule,
         interest_diff=interest_diff,
         total_payment_diff=total_payment_diff,
+        saving_ratio=saving_ratio,
+    )
+
+
+def build_variable_rate_comparison(request: LoanRequest) -> VariableRateComparison:
+    """生成浮动利率 vs 全程封顶利率（固定）等额本息的对比结果。"""
+    baseline_request = LoanRequest(
+        principal=request.principal,
+        annual_rate=request.annual_rate,
+        months=request.months,
+        method="equal-installment",
+    )
+    variable_request = LoanRequest(
+        principal=request.principal,
+        annual_rate=request.annual_rate,
+        months=request.months,
+        method="variable-installment",
+        rate_changes=request.rate_changes,
+    )
+
+    baseline_schedule = STRATEGIES["equal-installment"]().generate(baseline_request)
+    variable_schedule = STRATEGIES["variable-installment"]().generate(variable_request)
+
+    interest_saved = baseline_schedule.total_interest - variable_schedule.total_interest
+    total_payment_saved = baseline_schedule.total_payment - variable_schedule.total_payment
+
+    if baseline_schedule.total_interest == Decimal("0"):
+        saving_ratio = Decimal("0")
+    else:
+        saving_ratio = (interest_saved / baseline_schedule.total_interest * Decimal(100)).quantize(_CENT)
+
+    return VariableRateComparison(
+        baseline=baseline_schedule,
+        variable=variable_schedule,
+        interest_saved=interest_saved,
+        total_payment_saved=total_payment_saved,
         saving_ratio=saving_ratio,
     )

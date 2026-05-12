@@ -281,8 +281,8 @@ def test_rate_changes_period_exceeds_months_returns_nonzero(capsys):
     assert exit_code != 0
 
 
-def test_rate_changes_with_compare_returns_nonzero(capsys):
-    """--compare 与 --rate-changes 组合暂不支持。"""
+def test_rate_changes_with_compare_succeeds():
+    """--compare 与 --rate-changes 组合：输出浮动利率对比。"""
     exit_code = main([
         "--principal", "1000000",
         "--annual-rate", "3.25",
@@ -291,8 +291,81 @@ def test_rate_changes_with_compare_returns_nonzero(capsys):
         "--compare",
         "--no-color",
     ])
+    assert exit_code == 0
+
+
+def test_variable_compare_outputs_labels(capsys):
+    main([
+        "--principal", "1000000",
+        "--annual-rate", "3.25",
+        "--months", "12",
+        "--rate-changes", "1:6:2.5",
+        "--compare",
+        "--no-color",
+    ])
+    out = capsys.readouterr().out
+    assert "基准" in out
+    assert "实际" in out
+    assert "节省" in out
+
+
+def test_variable_compare_with_detail(capsys):
+    main([
+        "--principal", "100000",
+        "--annual-rate", "3.25",
+        "--months", "12",
+        "--rate-changes", "1:6:2.5",
+        "--compare",
+        "--compare-detail",
+        "--no-color",
+    ])
+    out = capsys.readouterr().out
+    assert "逐期对比明细" in out
+
+
+def test_variable_compare_short_flags():
+    exit_code = main([
+        "-p", "500000", "-r", "3.25", "-m", "60",
+        "--rate-changes", "1:12:2.5",
+        "-c", "-n",
+    ])
+    assert exit_code == 0
+
+
+def test_variable_compare_detail_short_flags(capsys):
+    main([
+        "-p", "100000", "-r", "3.25", "-m", "12",
+        "--rate-changes", "1:6:2.5",
+        "-c", "-d", "-n",
+    ])
+    out = capsys.readouterr().out
+    assert "逐期对比明细" in out
+
+
+def test_variable_compare_segments_equal_cap_succeeds():
+    """所有区间利率等于封顶利率，节省为 0，正常输出不报错。"""
+    exit_code = main([
+        "--principal", "100000",
+        "--annual-rate", "3.25",
+        "--months", "12",
+        "--rate-changes", "1:12:3.25",
+        "--compare",
+        "--no-color",
+    ])
+    assert exit_code == 0
+
+
+def test_variable_compare_invalid_segments_returns_nonzero(capsys):
+    """浮动对比模式下非法区间仍被拦截。"""
+    exit_code = main([
+        "--principal", "1000000",
+        "--annual-rate", "3.25",
+        "--months", "360",
+        "--rate-changes", "13:24:4.0",  # rc > cap
+        "--compare",
+        "--no-color",
+    ])
     assert exit_code != 0
-    assert "暂不支持" in capsys.readouterr().err
 
 
 def test_rate_changes_zero_rate_segment_succeeds():
