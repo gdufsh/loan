@@ -1,6 +1,5 @@
 from decimal import Decimal, InvalidOperation
 
-
 RateSegment = tuple[int, int, Decimal]  # (start, end, rate)
 
 
@@ -90,6 +89,4 @@ def _validate_segments(
         curr_end = sorted_segs[i][1]
         next_start = sorted_segs[i + 1][0]
         if curr_end >= next_start:
-            raise ValueError(
-                f"区间重叠：{sorted_segs[i][:2]} 与 {sorted_segs[i + 1][:2]}"
-            )
+            raise ValueError(f"区间重叠：{sorted_segs[i][:2]} 与 {sorted_segs[i + 1][:2]}")

@@ -9,7 +9,7 @@ VariableRateInstallmentStrategy 单元测试。
   5. 区间内利率生效，区间外用 cap rate
   6. 利率降低期月供变小，利率恢复期月供变大
 """
-import pytest
+
 from decimal import Decimal
 
 from loan.models import LoanRequest
@@ -36,6 +36,7 @@ def _req(months=360, rate_changes=()):
 # ---------------------------------------------------------------------------
 # 向后兼容：空 rate_changes 等价于固定利率等额本息
 # ---------------------------------------------------------------------------
+
 
 class TestBackwardCompatibility:
     def test_empty_rate_changes_first_payment_matches_equal_installment(self):
@@ -72,6 +73,7 @@ class TestBackwardCompatibility:
 # 核心不变量
 # ---------------------------------------------------------------------------
 
+
 class TestInvariants:
     def test_last_remaining_is_zero(self):
         req = _req(rate_changes=((13, 24, Decimal("2.1")),))
@@ -106,6 +108,7 @@ class TestInvariants:
 # 利率生效验证
 # ---------------------------------------------------------------------------
 
+
 class TestRateApplication:
     def test_annual_rate_field_inside_segment(self):
         """区间内的 installment.annual_rate 应为区间利率。"""
@@ -131,7 +134,7 @@ class TestRateApplication:
         req = _req(rate_changes=segments)
         sched = _VI.generate(req)
         payment_before = sched.installments[11].payment  # 第12期（cap利率）
-        payment_after = sched.installments[12].payment   # 第13期（低利率）
+        payment_after = sched.installments[12].payment  # 第13期（低利率）
         assert payment_after < payment_before
 
     def test_payment_increases_when_rate_recovers(self):
@@ -139,8 +142,8 @@ class TestRateApplication:
         segments = ((13, 24, Decimal("2.1")),)
         req = _req(rate_changes=segments)
         sched = _VI.generate(req)
-        payment_low = sched.installments[12].payment   # 第13期（低利率）
-        payment_cap = sched.installments[24].payment   # 第25期（cap利率）
+        payment_low = sched.installments[12].payment  # 第13期（低利率）
+        payment_cap = sched.installments[24].payment  # 第25期（cap利率）
         assert payment_cap > payment_low
 
     def test_interest_calculated_with_segment_rate(self):
@@ -176,6 +179,7 @@ class TestRateApplication:
 # ---------------------------------------------------------------------------
 # 边界条件
 # ---------------------------------------------------------------------------
+
 
 class TestEdgeCases:
     def test_zero_rate_segment(self):

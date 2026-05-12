@@ -1,12 +1,13 @@
 """
 Comparison 单元测试：验证 build_comparison / build_variable_rate_comparison 的差额方向、数值一致性、边界条件。
 """
-import pytest
+
 from decimal import Decimal
+
+import pytest
 
 from loan.comparison import build_comparison, build_variable_rate_comparison
 from loan.models import LoanRequest
-
 
 
 @pytest.fixture
@@ -73,6 +74,7 @@ class TestBuildComparison:
 
     def test_comparison_is_frozen(self, typical_request):
         from dataclasses import FrozenInstanceError
+
         comp = build_comparison(typical_request)
         with pytest.raises(FrozenInstanceError):
             comp.interest_diff = Decimal("0")  # type: ignore[misc]
@@ -86,6 +88,7 @@ class TestBuildComparison:
 # ---------------------------------------------------------------------------
 # build_variable_rate_comparison
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def variable_request() -> LoanRequest:
@@ -181,6 +184,7 @@ class TestBuildVariableRateComparison:
 
     def test_result_is_frozen(self, variable_request):
         from dataclasses import FrozenInstanceError
+
         comp = build_variable_rate_comparison(variable_request)
         with pytest.raises(FrozenInstanceError):
             comp.interest_saved = Decimal("0")  # type: ignore[misc]

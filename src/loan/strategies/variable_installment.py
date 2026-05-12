@@ -1,4 +1,4 @@
-from decimal import Decimal, ROUND_HALF_UP, getcontext
+from decimal import ROUND_HALF_UP, Decimal, getcontext
 
 from loan.models import Installment, LoanRequest, Schedule
 from loan.rate_schedule import resolve_rate
@@ -41,14 +41,16 @@ class VariableRateInstallmentStrategy(RepaymentStrategy):
 
             remaining = (remaining - principal_this).quantize(_CENT, rounding=ROUND_HALF_UP)
 
-            installments.append(Installment(
-                period=period,
-                payment=payment,
-                principal=principal_this,
-                interest=interest_this,
-                remaining=remaining,
-                annual_rate=annual_rate_t,
-            ))
+            installments.append(
+                Installment(
+                    period=period,
+                    payment=payment,
+                    principal=principal_this,
+                    interest=interest_this,
+                    remaining=remaining,
+                    annual_rate=annual_rate_t,
+                )
+            )
 
         total_payment = sum(i.payment for i in installments)
         total_interest = sum(i.interest for i in installments)

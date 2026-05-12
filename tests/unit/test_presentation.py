@@ -1,8 +1,10 @@
 """
 presentation 渲染单元测试：验证 render_comparison / render_variable_rate_comparison 纯文本输出包含关键字符串。
 """
-import pytest
+
 from decimal import Decimal
+
+import pytest
 
 from loan.comparison import build_comparison, build_variable_rate_comparison
 from loan.models import LoanRequest
@@ -79,6 +81,7 @@ class TestRenderComparison:
 # ---------------------------------------------------------------------------
 # render_variable_rate_comparison
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def variable_comp():
