@@ -8,11 +8,12 @@ rate_schedule 解析器与 resolve_rate 单元测试。
 
 未被覆盖的期数使用默认 cap rate（即 -r 参数值）。
 """
-import pytest
+
 from decimal import Decimal
 
-from loan.rate_schedule import parse_rate_changes, resolve_rate
+import pytest
 
+from loan.rate_schedule import parse_rate_changes, resolve_rate
 
 CAP = Decimal("3.25")
 
@@ -20,6 +21,7 @@ CAP = Decimal("3.25")
 # ---------------------------------------------------------------------------
 # parse_rate_changes
 # ---------------------------------------------------------------------------
+
 
 class TestParseRateChanges:
     def test_single_segment(self):
@@ -89,6 +91,7 @@ class TestParseRateChanges:
 # resolve_rate —— 校验区间合法性
 # ---------------------------------------------------------------------------
 
+
 class TestValidateSegments:
     def test_overlapping_segments_raises(self):
         segments = ((13, 24, Decimal("2.1")), (20, 30, Decimal("2.5")))
@@ -117,6 +120,7 @@ class TestValidateSegments:
 # ---------------------------------------------------------------------------
 # resolve_rate —— 查询利率
 # ---------------------------------------------------------------------------
+
 
 class TestResolveRate:
     def _segments(self):

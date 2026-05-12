@@ -2,12 +2,12 @@
 核心算法单元测试。
 覆盖：正确性、边界条件、不变量（末期归零、总本金匹配）。
 """
-import pytest
+
 from decimal import Decimal
 
 from loan.models import LoanRequest
-from loan.strategies.equal_principal import EqualPrincipalStrategy
 from loan.strategies.equal_installment import EqualInstallmentStrategy
+from loan.strategies.equal_principal import EqualPrincipalStrategy
 
 _EP = EqualPrincipalStrategy()
 _EI = EqualInstallmentStrategy()
@@ -17,6 +17,7 @@ _CENT = Decimal("0.01")
 # ---------------------------------------------------------------------------
 # 等额本金
 # ---------------------------------------------------------------------------
+
 
 class TestEqualPrincipal:
     def test_last_remaining_is_zero(self, short_request):
@@ -97,6 +98,7 @@ class TestEqualPrincipal:
 # 等额本息
 # ---------------------------------------------------------------------------
 
+
 class TestEqualInstallment:
     def test_last_remaining_is_zero(self, typical_request):
         sched = _EI.generate(typical_request)
@@ -129,9 +131,7 @@ class TestEqualInstallment:
         assert sched.installments[-1].remaining == Decimal("0.00")
         assert all(i.interest == Decimal("0.00") for i in sched.installments)
         # 零利率下月供 = 本金 / 期数
-        expected = (zero_rate_request.principal / Decimal(zero_rate_request.months)).quantize(
-            Decimal("0.01")
-        )
+        expected = (zero_rate_request.principal / Decimal(zero_rate_request.months)).quantize(Decimal("0.01"))
         for inst in sched.installments[:-1]:
             assert inst.payment == expected
 

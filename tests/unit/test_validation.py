@@ -1,5 +1,6 @@
-import pytest
 from decimal import Decimal
+
+import pytest
 
 from loan.errors import InvalidLoanParameterError
 from loan.models import LoanRequest
