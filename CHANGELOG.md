@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rich terminal output with color; plain-text fallback (`--no-color`)
 - `--version` / `-v` flag
 - Input validation with clear Chinese error messages
-- `pipx install loan` support as a standalone CLI tool
+- `pipx install loankit` support as a standalone CLI tool
 
-[Unreleased]: https://github.com/gdufsh/loan/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/gdufsh/loan/releases/tag/v0.1.0
+[Unreleased]: https://github.com/gdufsh/loankit/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/gdufsh/loankit/releases/tag/v0.1.0

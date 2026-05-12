@@ -1,8 +1,8 @@
-# loan
+# loankit
 
-[![CI](https://github.com/gdufsh/loan/actions/workflows/ci.yml/badge.svg)](https://github.com/gdufsh/loan/actions/workflows/ci.yml)
-[![PyPI](https://img.shields.io/pypi/v/loan)](https://pypi.org/project/loan/)
-[![Python](https://img.shields.io/pypi/pyversions/loan)](https://pypi.org/project/loan/)
+[![CI](https://github.com/gdufsh/loankit/actions/workflows/ci.yml/badge.svg)](https://github.com/gdufsh/loankit/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/loankit)](https://pypi.org/project/loankit/)
+[![Python](https://img.shields.io/pypi/pyversions/loankit)](https://pypi.org/project/loankit/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 贷款还款计划计算器，支持**等额本金**、**等额本息**，以及香港 H/P 利率联动场景下的**浮动利率等额本息**。
@@ -21,19 +21,19 @@
 ### 推荐：pipx（隔离安装，全局可用）
 
 ```bash
-pipx install loan
+pipx install loankit
 ```
 
 ### pip（全局或虚拟环境）
 
 ```bash
-pip install loan
+pip install loankit
 ```
 
 ### 从源码安装
 
 ```bash
-git clone https://github.com/gdufsh/loan.git
+git clone https://github.com/gdufsh/loankit.git
 cd loan
 pip install .
 ```
@@ -134,7 +134,7 @@ loan -p 1000000 -r 3.25 -m 360 --rate-changes 1:24:2.5 --compare
 ## 开发
 
 ```bash
-git clone https://github.com/gdufsh/loan.git
+git clone https://github.com/gdufsh/loankit.git
 cd loan
 pip install -e ".[dev]"
 
