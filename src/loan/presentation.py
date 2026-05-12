@@ -4,7 +4,7 @@ from rich.console import Console
 from rich.table import Table
 from rich import box
 
-from loan.models import Comparison, Schedule
+from loan.models import Comparison, Schedule, VariableRateComparison
 
 _CONSOLE = Console()
 
@@ -180,9 +180,11 @@ def _render_detail_rich(comp: Comparison) -> None:
     detail.add_column("EP月供", justify="right", style="green")
     detail.add_column("EP还本", justify="right", style="green")
     detail.add_column("EP还息", justify="right", style="green")
+    detail.add_column("EP剩余", justify="right", style="green")
     detail.add_column("EI月供", justify="right", style="yellow")
     detail.add_column("EI还本", justify="right", style="yellow")
     detail.add_column("EI还息", justify="right", style="yellow")
+    detail.add_column("EI剩余", justify="right", style="yellow")
 
     for ep_inst, ei_inst in zip(ep_insts, ei_insts):
         detail.add_row(
@@ -190,9 +192,11 @@ def _render_detail_rich(comp: Comparison) -> None:
             _fmt(ep_inst.payment),
             _fmt(ep_inst.principal),
             _fmt(ep_inst.interest),
+            _fmt(ep_inst.remaining),
             _fmt(ei_inst.payment),
             _fmt(ei_inst.principal),
             _fmt(ei_inst.interest),
+            _fmt(ei_inst.remaining),
         )
 
     _CONSOLE.print(detail)
@@ -239,10 +243,13 @@ def _render_detail_plain(comp: Comparison) -> None:
     ei_insts = comp.equal_installment.installments
 
     print("\n逐期对比明细")
-    print("-" * 90)
-    hdr = f"{'期数':>4}  {'EP月供':>10}  {'EP还本':>10}  {'EP还息':>10}  {'EI月供':>10}  {'EI还本':>10}  {'EI还息':>10}"
+    print("-" * 114)
+    hdr = (
+        f"{'期数':>4}  {'EP月供':>10}  {'EP还本':>10}  {'EP还息':>10}  {'EP剩余':>12}  "
+        f"{'EI月供':>10}  {'EI还本':>10}  {'EI还息':>10}  {'EI剩余':>12}"
+    )
     print(hdr)
-    print("-" * 90)
+    print("-" * 114)
 
     for ep_inst, ei_inst in zip(ep_insts, ei_insts):
         print(
@@ -250,9 +257,192 @@ def _render_detail_plain(comp: Comparison) -> None:
             f"{_fmt(ep_inst.payment):>10}  "
             f"{_fmt(ep_inst.principal):>10}  "
             f"{_fmt(ep_inst.interest):>10}  "
+            f"{_fmt(ep_inst.remaining):>12}  "
             f"{_fmt(ei_inst.payment):>10}  "
             f"{_fmt(ei_inst.principal):>10}  "
-            f"{_fmt(ei_inst.interest):>10}"
+            f"{_fmt(ei_inst.interest):>10}  "
+            f"{_fmt(ei_inst.remaining):>12}"
         )
-    print("-" * 90)
+    print("-" * 114)
     print(f"共 {len(ep_insts)} 期")
+
+
+# ---------------------------------------------------------------------------
+# 浮动利率对比渲染
+# ---------------------------------------------------------------------------
+
+def render_variable_rate_comparison(
+    comp: VariableRateComparison,
+    *,
+    use_rich: bool = True,
+    show_detail: bool = False,
+) -> None:
+    req = comp.baseline.request
+    header = (
+        f"浮动利率对比 | 本金 ¥{_fmt(req.principal)} | "
+        f"封顶利率 {req.annual_rate}% | 期限 {req.months} 期"
+    )
+
+    if use_rich:
+        _render_variable_comparison_rich(comp, header, show_detail)
+    else:
+        _render_variable_comparison_plain(comp, header, show_detail)
+
+
+def _render_variable_comparison_rich(comp: VariableRateComparison, header: str, show_detail: bool) -> None:
+    bl = comp.baseline
+    va = comp.variable
+
+    _CONSOLE.print(f"\n[bold]{header}[/bold]\n")
+
+    summary = Table(box=box.SIMPLE_HEAVY, show_header=True, highlight=True)
+    summary.add_column("指标", style="bold", min_width=14)
+    summary.add_column("基准（封顶利率）", justify="right", style="yellow")
+    summary.add_column("实际（浮动利率）", justify="right", style="green")
+    summary.add_column("节省（基准-实际）", justify="right", style="cyan")
+
+    bl_first = bl.installments[0]
+    va_first = va.installments[0]
+    bl_last = bl.installments[-1]
+    va_last = va.installments[-1]
+    bl_avg = bl.total_payment / len(bl.installments)
+    va_avg = va.total_payment / len(va.installments)
+    bl_max = max(i.payment for i in bl.installments)
+    va_max = max(i.payment for i in va.installments)
+    bl_min = min(i.payment for i in bl.installments)
+    va_min = min(i.payment for i in va.installments)
+
+    rows = [
+        ("首月月供(元)",   _fmt(bl_first.payment),  _fmt(va_first.payment),  _fmt(bl_first.payment - va_first.payment)),
+        ("末月月供(元)",   _fmt(bl_last.payment),   _fmt(va_last.payment),   _fmt(bl_last.payment - va_last.payment)),
+        ("月均月供(元)",   _fmt(bl_avg),             _fmt(va_avg),             _fmt(bl_avg - va_avg)),
+        ("最高月供(元)",   _fmt(bl_max),             _fmt(va_max),             _fmt(bl_max - va_max)),
+        ("最低月供(元)",   _fmt(bl_min),             _fmt(va_min),             _fmt(bl_min - va_min)),
+        ("总还款额(元)",   _fmt(bl.total_payment),  _fmt(va.total_payment),  _fmt(comp.total_payment_saved)),
+        ("总利息(元)",     _fmt(bl.total_interest), _fmt(va.total_interest), _fmt(comp.interest_saved)),
+        ("节省利息比例",   "基准",                   f"{comp.saving_ratio}%", "—"),
+    ]
+    for row in rows:
+        summary.add_row(*row)
+
+    _CONSOLE.print(summary)
+
+    if show_detail:
+        _render_variable_detail_rich(comp)
+
+
+def _render_variable_detail_rich(comp: VariableRateComparison) -> None:
+    bl_insts = comp.baseline.installments
+    va_insts = comp.variable.installments
+
+    detail = Table(title="逐期对比明细", box=box.SIMPLE_HEAVY, show_lines=False, highlight=True)
+    detail.add_column("期数", justify="right", style="bold")
+    detail.add_column("基准月供", justify="right", style="yellow")
+    detail.add_column("基准还本", justify="right", style="yellow")
+    detail.add_column("基准还息", justify="right", style="yellow")
+    detail.add_column("基准剩余", justify="right", style="yellow")
+    detail.add_column("实际月供", justify="right", style="green")
+    detail.add_column("实际还本", justify="right", style="green")
+    detail.add_column("实际还息", justify="right", style="green")
+    detail.add_column("实际剩余", justify="right", style="green")
+    detail.add_column("实际年利率", justify="right", style="magenta")
+
+    prev_rate = None
+    for bl_inst, va_inst in zip(bl_insts, va_insts):
+        rate_changed = va_inst.annual_rate != prev_rate
+        rate_cell = str(va_inst.annual_rate) if rate_changed else ""
+        style = "bold magenta" if rate_changed else None
+        detail.add_row(
+            str(bl_inst.period),
+            _fmt(bl_inst.payment),
+            _fmt(bl_inst.principal),
+            _fmt(bl_inst.interest),
+            _fmt(bl_inst.remaining),
+            _fmt(va_inst.payment),
+            _fmt(va_inst.principal),
+            _fmt(va_inst.interest),
+            _fmt(va_inst.remaining),
+            rate_cell,
+            style=style,
+        )
+        prev_rate = va_inst.annual_rate
+
+    _CONSOLE.print(detail)
+    _CONSOLE.print(f"  共 {len(bl_insts)} 期\n")
+
+
+def _render_variable_comparison_plain(comp: VariableRateComparison, header: str, show_detail: bool) -> None:
+    bl = comp.baseline
+    va = comp.variable
+
+    print(f"\n{header}")
+    print("=" * 86)
+
+    bl_first = bl.installments[0]
+    va_first = va.installments[0]
+    bl_last = bl.installments[-1]
+    va_last = va.installments[-1]
+    bl_avg = bl.total_payment / len(bl.installments)
+    va_avg = va.total_payment / len(va.installments)
+    bl_max = max(i.payment for i in bl.installments)
+    va_max = max(i.payment for i in va.installments)
+    bl_min = min(i.payment for i in bl.installments)
+    va_min = min(i.payment for i in va.installments)
+
+    rows = [
+        ("首月月供(元)",   _fmt(bl_first.payment),  _fmt(va_first.payment),  _fmt(bl_first.payment - va_first.payment)),
+        ("末月月供(元)",   _fmt(bl_last.payment),   _fmt(va_last.payment),   _fmt(bl_last.payment - va_last.payment)),
+        ("月均月供(元)",   _fmt(bl_avg),             _fmt(va_avg),             _fmt(bl_avg - va_avg)),
+        ("最高月供(元)",   _fmt(bl_max),             _fmt(va_max),             _fmt(bl_max - va_max)),
+        ("最低月供(元)",   _fmt(bl_min),             _fmt(va_min),             _fmt(bl_min - va_min)),
+        ("总还款额(元)",   _fmt(bl.total_payment),  _fmt(va.total_payment),  _fmt(comp.total_payment_saved)),
+        ("总利息(元)",     _fmt(bl.total_interest), _fmt(va.total_interest), _fmt(comp.interest_saved)),
+        ("节省利息比例",   "基准",                   f"{comp.saving_ratio}%", "—"),
+    ]
+
+    col_w = [16, 16, 16, 16]
+    hdr = f"{'指标':<{col_w[0]}}{'基准（封顶利率）':>{col_w[1]}}{'实际（浮动利率）':>{col_w[2]}}{'节省（基准-实际）':>{col_w[3]}}"
+    print(hdr)
+    print("-" * 86)
+    for label, bl_val, va_val, saved_val in rows:
+        print(f"{label:<{col_w[0]}}{bl_val:>{col_w[1]}}{va_val:>{col_w[2]}}{saved_val:>{col_w[3]}}")
+    print("=" * 86)
+
+    if show_detail:
+        _render_variable_detail_plain(comp)
+
+
+def _render_variable_detail_plain(comp: VariableRateComparison) -> None:
+    bl_insts = comp.baseline.installments
+    va_insts = comp.variable.installments
+
+    print("\n逐期对比明细")
+    print("-" * 126)
+    hdr = (
+        f"{'期数':>4}  {'基准月供':>10}  {'基准还本':>10}  {'基准还息':>10}  {'基准剩余':>12}  "
+        f"{'实际月供':>10}  {'实际还本':>10}  {'实际还息':>10}  {'实际剩余':>12}  {'实际年利率':>8}"
+    )
+    print(hdr)
+    print("-" * 126)
+
+    prev_rate = None
+    for bl_inst, va_inst in zip(bl_insts, va_insts):
+        rate_changed = va_inst.annual_rate != prev_rate
+        rate_str = f"{va_inst.annual_rate}%" if rate_changed else ""
+        mark = "  <- 利率变更" if rate_changed and prev_rate is not None else ""
+        print(
+            f"{bl_inst.period:>4}  "
+            f"{_fmt(bl_inst.payment):>10}  "
+            f"{_fmt(bl_inst.principal):>10}  "
+            f"{_fmt(bl_inst.interest):>10}  "
+            f"{_fmt(bl_inst.remaining):>12}  "
+            f"{_fmt(va_inst.payment):>10}  "
+            f"{_fmt(va_inst.principal):>10}  "
+            f"{_fmt(va_inst.interest):>10}  "
+            f"{_fmt(va_inst.remaining):>12}  "
+            f"{rate_str:>8}{mark}"
+        )
+        prev_rate = va_inst.annual_rate
+
+    print("-" * 126)
+    print(f"共 {len(bl_insts)} 期")

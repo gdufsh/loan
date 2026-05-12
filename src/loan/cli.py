@@ -2,10 +2,10 @@ import argparse
 import sys
 from decimal import Decimal, InvalidOperation
 
-from loan.comparison import build_comparison
+from loan.comparison import build_comparison, build_variable_rate_comparison
 from loan.errors import LoanError, UnknownStrategyError
 from loan.models import LoanRequest
-from loan.presentation import render_comparison, render_schedule
+from loan.presentation import render_comparison, render_schedule, render_variable_rate_comparison
 from loan.rate_schedule import parse_rate_changes
 from loan.strategies import STRATEGIES
 from loan.validation import validate_request
@@ -89,10 +89,27 @@ def main(argv: list[str] | None = None) -> int:
             print(f"错误：{exc}", file=sys.stderr)
             return 1
 
-    # --compare 与 --rate-changes 暂不支持组合
+    # --compare + --rate-changes：浮动利率对比模式
     if args.compare and rate_changes:
-        print("错误：对比模式暂不支持浮动利率（--rate-changes）", file=sys.stderr)
-        return 1
+        if args.method != "equal-installment":
+            print("提示：已启用对比模式，--method 参数被忽略", file=sys.stderr)
+
+        request = LoanRequest(
+            principal=principal,
+            annual_rate=annual_rate,
+            months=args.months,
+            method="variable-installment",
+            rate_changes=rate_changes,
+        )
+        try:
+            validate_request(request)
+            comp = build_variable_rate_comparison(request)
+        except (LoanError, ValueError) as exc:
+            print(f"错误：{exc}", file=sys.stderr)
+            return 1
+
+        render_variable_rate_comparison(comp, use_rich=use_rich, show_detail=args.compare_detail)
+        return 0
 
     if args.compare:
         if args.method != "equal-installment":

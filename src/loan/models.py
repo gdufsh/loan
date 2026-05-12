@@ -41,3 +41,16 @@ class Comparison:
     interest_diff: Decimal      # EI 总利息 - EP 总利息（正值=EI多付）
     total_payment_diff: Decimal # EI 总还款 - EP 总还款
     saving_ratio: Decimal       # 选等额本金节省的利息比例（基于 EI），零利率时为 0
+
+
+@dataclass(frozen=True)
+class VariableRateComparison:
+    """浮动利率 vs 封顶利率（固定）等额本息对比结果。
+    interest_saved = baseline.total_interest - variable.total_interest
+    正值代表因浮动利率优惠节省的利息。
+    """
+    baseline: Schedule          # 全程封顶利率的固定等额本息
+    variable: Schedule          # 浮动利率等额本息
+    interest_saved: Decimal     # 节省利息（基准-实际，正值=省钱）
+    total_payment_saved: Decimal # 节省总还款（基准-实际）
+    saving_ratio: Decimal       # 节省利息 / 基准总利息 * 100，零利率时为 0
