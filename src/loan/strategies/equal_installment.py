@@ -1,4 +1,4 @@
-from decimal import Decimal, ROUND_HALF_UP, getcontext
+from decimal import ROUND_HALF_UP, Decimal, getcontext
 
 from loan.models import Installment, LoanRequest, Schedule
 from loan.strategies.base import RepaymentStrategy
@@ -21,9 +21,7 @@ class EqualInstallmentStrategy(RepaymentStrategy):
             monthly_payment = (p / Decimal(n)).quantize(_CENT, rounding=ROUND_HALF_UP)
         else:
             factor = (1 + monthly_rate) ** n
-            monthly_payment = (p * monthly_rate * factor / (factor - 1)).quantize(
-                _CENT, rounding=ROUND_HALF_UP
-            )
+            monthly_payment = (p * monthly_rate * factor / (factor - 1)).quantize(_CENT, rounding=ROUND_HALF_UP)
 
         installments: list[Installment] = []
         remaining = p

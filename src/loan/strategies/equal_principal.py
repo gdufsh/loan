@@ -1,4 +1,4 @@
-from decimal import Decimal, ROUND_HALF_UP, getcontext
+from decimal import ROUND_HALF_UP, Decimal, getcontext
 
 from loan.models import Installment, LoanRequest, Schedule
 from loan.strategies.base import RepaymentStrategy
@@ -13,9 +13,7 @@ class EqualPrincipalStrategy(RepaymentStrategy):
 
     def generate(self, request: LoanRequest) -> Schedule:
         monthly_rate = request.annual_rate / Decimal(100) / Decimal(12)
-        monthly_principal = (request.principal / Decimal(request.months)).quantize(
-            _CENT, rounding=ROUND_HALF_UP
-        )
+        monthly_principal = (request.principal / Decimal(request.months)).quantize(_CENT, rounding=ROUND_HALF_UP)
 
         installments: list[Installment] = []
         remaining = request.principal

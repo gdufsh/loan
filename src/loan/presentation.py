@@ -1,8 +1,8 @@
 from decimal import Decimal
 
+from rich import box
 from rich.console import Console
 from rich.table import Table
-from rich import box
 
 from loan.models import Comparison, Schedule, VariableRateComparison
 
@@ -27,12 +27,7 @@ def render_schedule(schedule: Schedule, *, use_rich: bool = True) -> None:
     }.get(req.method, req.method)
 
     rate_info = f"封顶利率 {req.annual_rate}%" if _has_variable_rate(schedule) else f"年利率 {req.annual_rate}%"
-    title = (
-        f"还款计划 — {method_label} | "
-        f"本金 ¥{req.principal:,.2f} | "
-        f"{rate_info} | "
-        f"期限 {req.months} 期"
-    )
+    title = f"还款计划 — {method_label} | 本金 ¥{req.principal:,.2f} | {rate_info} | 期限 {req.months} 期"
 
     if use_rich:
         _render_rich(schedule, title)
@@ -121,13 +116,11 @@ def _render_summary(schedule: Schedule) -> None:
 # 对比渲染
 # ---------------------------------------------------------------------------
 
+
 def render_comparison(comp: Comparison, *, use_rich: bool = True, show_detail: bool = False) -> None:
     req = comp.equal_principal.request
 
-    header = (
-        f"还款方式对比 | 本金 ¥{_fmt(req.principal)} | "
-        f"年利率 {req.annual_rate}% | 期限 {req.months} 期"
-    )
+    header = f"还款方式对比 | 本金 ¥{_fmt(req.principal)} | 年利率 {req.annual_rate}% | 期限 {req.months} 期"
 
     if use_rich:
         _render_comparison_rich(comp, header, show_detail)
@@ -155,12 +148,12 @@ def _render_comparison_rich(comp: Comparison, header: str, show_detail: bool) ->
     ei_avg = ei.total_payment / len(ei.installments)
 
     rows = [
-        ("首月月供(元)",   _fmt(ep_first.payment),  _fmt(ei_first.payment),  _fmt(ei_first.payment - ep_first.payment)),
-        ("末月月供(元)",   _fmt(ep_last.payment),   _fmt(ei_last.payment),   _fmt(ei_last.payment - ep_last.payment)),
-        ("月均月供(元)",   _fmt(ep_avg),             _fmt(ei_avg),             _fmt(ei_avg - ep_avg)),
-        ("总还款额(元)",   _fmt(ep.total_payment),  _fmt(ei.total_payment),  _fmt(comp.total_payment_diff)),
-        ("总利息(元)",     _fmt(ep.total_interest), _fmt(ei.total_interest), _fmt(comp.interest_diff)),
-        ("利息节省比例",   f"{comp.saving_ratio}%", "基准",                   "—"),
+        ("首月月供(元)", _fmt(ep_first.payment), _fmt(ei_first.payment), _fmt(ei_first.payment - ep_first.payment)),
+        ("末月月供(元)", _fmt(ep_last.payment), _fmt(ei_last.payment), _fmt(ei_last.payment - ep_last.payment)),
+        ("月均月供(元)", _fmt(ep_avg), _fmt(ei_avg), _fmt(ei_avg - ep_avg)),
+        ("总还款额(元)", _fmt(ep.total_payment), _fmt(ei.total_payment), _fmt(comp.total_payment_diff)),
+        ("总利息(元)", _fmt(ep.total_interest), _fmt(ei.total_interest), _fmt(comp.interest_diff)),
+        ("利息节省比例", f"{comp.saving_ratio}%", "基准", "—"),
     ]
     for row in rows:
         summary.add_row(*row)
@@ -218,12 +211,12 @@ def _render_comparison_plain(comp: Comparison, header: str, show_detail: bool) -
     ei_avg = ei.total_payment / len(ei.installments)
 
     rows = [
-        ("首月月供(元)",   _fmt(ep_first.payment),  _fmt(ei_first.payment),  _fmt(ei_first.payment - ep_first.payment)),
-        ("末月月供(元)",   _fmt(ep_last.payment),   _fmt(ei_last.payment),   _fmt(ei_last.payment - ep_last.payment)),
-        ("月均月供(元)",   _fmt(ep_avg),             _fmt(ei_avg),             _fmt(ei_avg - ep_avg)),
-        ("总还款额(元)",   _fmt(ep.total_payment),  _fmt(ei.total_payment),  _fmt(comp.total_payment_diff)),
-        ("总利息(元)",     _fmt(ep.total_interest), _fmt(ei.total_interest), _fmt(comp.interest_diff)),
-        ("利息节省比例",   f"{comp.saving_ratio}%", "基准",                   "—"),
+        ("首月月供(元)", _fmt(ep_first.payment), _fmt(ei_first.payment), _fmt(ei_first.payment - ep_first.payment)),
+        ("末月月供(元)", _fmt(ep_last.payment), _fmt(ei_last.payment), _fmt(ei_last.payment - ep_last.payment)),
+        ("月均月供(元)", _fmt(ep_avg), _fmt(ei_avg), _fmt(ei_avg - ep_avg)),
+        ("总还款额(元)", _fmt(ep.total_payment), _fmt(ei.total_payment), _fmt(comp.total_payment_diff)),
+        ("总利息(元)", _fmt(ep.total_interest), _fmt(ei.total_interest), _fmt(comp.interest_diff)),
+        ("利息节省比例", f"{comp.saving_ratio}%", "基准", "—"),
     ]
 
     col_w = [16, 14, 14, 14]
@@ -271,6 +264,7 @@ def _render_detail_plain(comp: Comparison) -> None:
 # 浮动利率对比渲染
 # ---------------------------------------------------------------------------
 
+
 def render_variable_rate_comparison(
     comp: VariableRateComparison,
     *,
@@ -278,10 +272,7 @@ def render_variable_rate_comparison(
     show_detail: bool = False,
 ) -> None:
     req = comp.baseline.request
-    header = (
-        f"浮动利率对比 | 本金 ¥{_fmt(req.principal)} | "
-        f"封顶利率 {req.annual_rate}% | 期限 {req.months} 期"
-    )
+    header = f"浮动利率对比 | 本金 ¥{_fmt(req.principal)} | 封顶利率 {req.annual_rate}% | 期限 {req.months} 期"
 
     if use_rich:
         _render_variable_comparison_rich(comp, header, show_detail)
@@ -313,14 +304,14 @@ def _render_variable_comparison_rich(comp: VariableRateComparison, header: str, 
     va_min = min(i.payment for i in va.installments)
 
     rows = [
-        ("首月月供(元)",   _fmt(bl_first.payment),  _fmt(va_first.payment),  _fmt(bl_first.payment - va_first.payment)),
-        ("末月月供(元)",   _fmt(bl_last.payment),   _fmt(va_last.payment),   _fmt(bl_last.payment - va_last.payment)),
-        ("月均月供(元)",   _fmt(bl_avg),             _fmt(va_avg),             _fmt(bl_avg - va_avg)),
-        ("最高月供(元)",   _fmt(bl_max),             _fmt(va_max),             _fmt(bl_max - va_max)),
-        ("最低月供(元)",   _fmt(bl_min),             _fmt(va_min),             _fmt(bl_min - va_min)),
-        ("总还款额(元)",   _fmt(bl.total_payment),  _fmt(va.total_payment),  _fmt(comp.total_payment_saved)),
-        ("总利息(元)",     _fmt(bl.total_interest), _fmt(va.total_interest), _fmt(comp.interest_saved)),
-        ("节省利息比例",   "基准",                   f"{comp.saving_ratio}%", "—"),
+        ("首月月供(元)", _fmt(bl_first.payment), _fmt(va_first.payment), _fmt(bl_first.payment - va_first.payment)),
+        ("末月月供(元)", _fmt(bl_last.payment), _fmt(va_last.payment), _fmt(bl_last.payment - va_last.payment)),
+        ("月均月供(元)", _fmt(bl_avg), _fmt(va_avg), _fmt(bl_avg - va_avg)),
+        ("最高月供(元)", _fmt(bl_max), _fmt(va_max), _fmt(bl_max - va_max)),
+        ("最低月供(元)", _fmt(bl_min), _fmt(va_min), _fmt(bl_min - va_min)),
+        ("总还款额(元)", _fmt(bl.total_payment), _fmt(va.total_payment), _fmt(comp.total_payment_saved)),
+        ("总利息(元)", _fmt(bl.total_interest), _fmt(va.total_interest), _fmt(comp.interest_saved)),
+        ("节省利息比例", "基准", f"{comp.saving_ratio}%", "—"),
     ]
     for row in rows:
         summary.add_row(*row)
@@ -390,14 +381,14 @@ def _render_variable_comparison_plain(comp: VariableRateComparison, header: str,
     va_min = min(i.payment for i in va.installments)
 
     rows = [
-        ("首月月供(元)",   _fmt(bl_first.payment),  _fmt(va_first.payment),  _fmt(bl_first.payment - va_first.payment)),
-        ("末月月供(元)",   _fmt(bl_last.payment),   _fmt(va_last.payment),   _fmt(bl_last.payment - va_last.payment)),
-        ("月均月供(元)",   _fmt(bl_avg),             _fmt(va_avg),             _fmt(bl_avg - va_avg)),
-        ("最高月供(元)",   _fmt(bl_max),             _fmt(va_max),             _fmt(bl_max - va_max)),
-        ("最低月供(元)",   _fmt(bl_min),             _fmt(va_min),             _fmt(bl_min - va_min)),
-        ("总还款额(元)",   _fmt(bl.total_payment),  _fmt(va.total_payment),  _fmt(comp.total_payment_saved)),
-        ("总利息(元)",     _fmt(bl.total_interest), _fmt(va.total_interest), _fmt(comp.interest_saved)),
-        ("节省利息比例",   "基准",                   f"{comp.saving_ratio}%", "—"),
+        ("首月月供(元)", _fmt(bl_first.payment), _fmt(va_first.payment), _fmt(bl_first.payment - va_first.payment)),
+        ("末月月供(元)", _fmt(bl_last.payment), _fmt(va_last.payment), _fmt(bl_last.payment - va_last.payment)),
+        ("月均月供(元)", _fmt(bl_avg), _fmt(va_avg), _fmt(bl_avg - va_avg)),
+        ("最高月供(元)", _fmt(bl_max), _fmt(va_max), _fmt(bl_max - va_max)),
+        ("最低月供(元)", _fmt(bl_min), _fmt(va_min), _fmt(bl_min - va_min)),
+        ("总还款额(元)", _fmt(bl.total_payment), _fmt(va.total_payment), _fmt(comp.total_payment_saved)),
+        ("总利息(元)", _fmt(bl.total_interest), _fmt(va.total_interest), _fmt(comp.interest_saved)),
+        ("节省利息比例", "基准", f"{comp.saving_ratio}%", "—"),
     ]
 
     col_w = [16, 16, 16, 16]

@@ -2,6 +2,7 @@ import argparse
 import sys
 from decimal import Decimal, InvalidOperation
 
+from loan import __version__
 from loan.comparison import build_comparison, build_variable_rate_comparison
 from loan.errors import LoanError, UnknownStrategyError
 from loan.models import LoanRequest
@@ -15,43 +16,48 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="loan",
         description=(
-            "贷款还款计划计算器，支持等额本金和等额本息。"
-            "使用 --compare 对比两种方式；使用 --rate-changes 计算浮动利率还款计划。"
+            "贷款还款计划计算器，支持等额本金和等额本息。使用 --compare 对比两种方式；使用 --rate-changes 计算浮动利率还款计划。"
         ),
     )
     parser.add_argument(
-        "--principal", "-p",
+        "--principal",
+        "-p",
         required=True,
         metavar="金额",
         help="贷款本金（元），如 1000000",
     )
     parser.add_argument(
-        "--annual-rate", "-r",
+        "--annual-rate",
+        "-r",
         required=True,
         metavar="利率",
         help="年利率（百分比），浮动利率模式下为封顶利率，如 3.25 表示 3.25%%",
     )
     parser.add_argument(
-        "--months", "-m",
+        "--months",
+        "-m",
         required=True,
         type=int,
         metavar="期数",
         help="还款期数（月），如 360",
     )
     parser.add_argument(
-        "--method", "-M",
+        "--method",
+        "-M",
         choices=list(STRATEGIES.keys()),
         default="equal-installment",
         metavar="方式",
         help=f"还款方式：{', '.join(STRATEGIES.keys())}（默认：equal-installment，启用 --compare 时忽略）",
     )
     parser.add_argument(
-        "--compare", "-c",
+        "--compare",
+        "-c",
         action="store_true",
         help="对比等额本金和等额本息两种方式（忽略 --method）",
     )
     parser.add_argument(
-        "--compare-detail", "-d",
+        "--compare-detail",
+        "-d",
         action="store_true",
         help="在对比模式下额外输出逐期明细（需配合 --compare 使用）",
     )
@@ -61,9 +67,16 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="浮动利率区间，格式：x:y:rc[,x:y:rc,...]，如 1:24:2.5,25:36:3.0",
     )
     parser.add_argument(
-        "--no-color", "-n",
+        "--no-color",
+        "-n",
         action="store_true",
         help="禁用彩色输出，输出纯文本",
+    )
+    parser.add_argument(
+        "--version",
+        "-v",
+        action="version",
+        version=f"%(prog)s {__version__}",
     )
     return parser.parse_args(argv)
 
