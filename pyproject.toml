@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "loan"
+name = "loankit"
 version = "0.1.0"
 description = "贷款还款计划计算器，支持等额本金、等额本息及浮动利率还款方式"
 readme = "README.md"
@@ -31,10 +31,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/gdufsh/loan"
-Repository = "https://github.com/gdufsh/loan"
-Issues = "https://github.com/gdufsh/loan/issues"
-Changelog = "https://github.com/gdufsh/loan/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/gdufsh/loankit"
+Repository = "https://github.com/gdufsh/loankit"
+Issues = "https://github.com/gdufsh/loankit/issues"
+Changelog = "https://github.com/gdufsh/loankit/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [
