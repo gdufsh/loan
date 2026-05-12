@@ -8,3 +8,7 @@ class InvalidLoanParameterError(LoanError):
 
 class UnknownStrategyError(LoanError):
     pass
+
+
+class InvalidRateScheduleError(LoanError):
+    pass

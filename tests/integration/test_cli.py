@@ -170,3 +170,152 @@ def test_compare_zero_rate_succeeds():
         "--no-color",
     ])
     assert exit_code == 0
+
+
+# ---------------------------------------------------------------------------
+# 浮动利率模式
+# ---------------------------------------------------------------------------
+
+def test_rate_changes_basic_succeeds():
+    exit_code = main([
+        "--principal", "1000000",
+        "--annual-rate", "3.25",
+        "--months", "360",
+        "--rate-changes", "13:24:2.1",
+        "--no-color",
+    ])
+    assert exit_code == 0
+
+
+def test_rate_changes_multiple_segments_succeeds():
+    exit_code = main([
+        "--principal", "1000000",
+        "--annual-rate", "3.25",
+        "--months", "360",
+        "--rate-changes", "1:12:2.5,13:24:2.8,25:36:3.0",
+        "--no-color",
+    ])
+    assert exit_code == 0
+
+
+def test_rate_changes_output_contains_rate_column(capsys):
+    main([
+        "--principal", "1000000",
+        "--annual-rate", "3.25",
+        "--months", "12",
+        "--rate-changes", "7:12:2.0",
+        "--no-color",
+    ])
+    out = capsys.readouterr().out
+    assert "年利率" in out
+
+
+def test_rate_changes_rate_change_row_marked(capsys):
+    """利率变化行应有标记。"""
+    main([
+        "--principal", "1000000",
+        "--annual-rate", "3.25",
+        "--months", "12",
+        "--rate-changes", "7:12:2.0",
+        "--no-color",
+    ])
+    out = capsys.readouterr().out
+    assert "2.0" in out  # 变化利率出现在输出中
+
+
+def test_rate_changes_invalid_format_returns_nonzero(capsys):
+    exit_code = main([
+        "--principal", "1000000",
+        "--annual-rate", "3.25",
+        "--months", "360",
+        "--rate-changes", "13:24",  # 缺少 rc
+        "--no-color",
+    ])
+    assert exit_code != 0
+    assert "错误" in capsys.readouterr().err
+
+
+def test_rate_changes_non_numeric_returns_nonzero(capsys):
+    exit_code = main([
+        "--principal", "1000000",
+        "--annual-rate", "3.25",
+        "--months", "360",
+        "--rate-changes", "abc:24:2.1",
+        "--no-color",
+    ])
+    assert exit_code != 0
+
+
+def test_rate_changes_overlapping_segments_returns_nonzero(capsys):
+    exit_code = main([
+        "--principal", "1000000",
+        "--annual-rate", "3.25",
+        "--months", "360",
+        "--rate-changes", "13:24:2.1,20:30:2.5",
+        "--no-color",
+    ])
+    assert exit_code != 0
+    assert "重叠" in capsys.readouterr().err
+
+
+def test_rate_changes_rc_exceeds_cap_returns_nonzero(capsys):
+    exit_code = main([
+        "--principal", "1000000",
+        "--annual-rate", "3.25",
+        "--months", "360",
+        "--rate-changes", "13:24:4.0",  # 4.0 > cap 3.25
+        "--no-color",
+    ])
+    assert exit_code != 0
+    assert "封顶" in capsys.readouterr().err
+
+
+def test_rate_changes_period_exceeds_months_returns_nonzero(capsys):
+    exit_code = main([
+        "--principal", "1000000",
+        "--annual-rate", "3.25",
+        "--months", "360",
+        "--rate-changes", "13:400:2.1",  # 400 > months 360
+        "--no-color",
+    ])
+    assert exit_code != 0
+
+
+def test_rate_changes_with_compare_returns_nonzero(capsys):
+    """--compare 与 --rate-changes 组合暂不支持。"""
+    exit_code = main([
+        "--principal", "1000000",
+        "--annual-rate", "3.25",
+        "--months", "360",
+        "--rate-changes", "13:24:2.1",
+        "--compare",
+        "--no-color",
+    ])
+    assert exit_code != 0
+    assert "暂不支持" in capsys.readouterr().err
+
+
+def test_rate_changes_zero_rate_segment_succeeds():
+    exit_code = main([
+        "--principal", "120000",
+        "--annual-rate", "3.25",
+        "--months", "24",
+        "--rate-changes", "1:12:0",
+        "--no-color",
+    ])
+    assert exit_code == 0
+
+
+def test_rate_changes_typical_hk_mortgage(capsys):
+    """典型香港按揭：100万、cap 3.25%、前24期优惠 2.5%，验证输出完整。"""
+    exit_code = main([
+        "--principal", "1000000",
+        "--annual-rate", "3.25",
+        "--months", "360",
+        "--rate-changes", "1:24:2.5",
+        "--no-color",
+    ])
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "360" in out  # 期数出现
+    assert "2.5" in out  # 优惠利率出现

@@ -1,13 +1,15 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
 
 
 @dataclass(frozen=True)
 class LoanRequest:
     principal: Decimal      # 贷款本金（元）
-    annual_rate: Decimal    # 年利率（百分比，如 4.5 表示 4.5%）
+    annual_rate: Decimal    # 年利率（百分比），浮动利率模式下为封顶利率
     months: int             # 还款期数
     method: str             # 还款方式标识
+    # 浮动利率区间：((start, end, rate), ...)，未覆盖期数使用 annual_rate
+    rate_changes: tuple[tuple[int, int, Decimal], ...] = field(default=())
 
 
 @dataclass(frozen=True)
@@ -17,6 +19,7 @@ class Installment:
     principal: Decimal      # 当期还本金
     interest: Decimal       # 当期还利息
     remaining: Decimal      # 剩余本金
+    annual_rate: Decimal = field(default=Decimal("0"))  # 当期年利率
 
 
 @dataclass(frozen=True)

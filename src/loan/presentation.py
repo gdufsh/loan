@@ -13,17 +13,24 @@ def _fmt(value: Decimal) -> str:
     return f"{value:,.2f}"
 
 
+def _has_variable_rate(schedule: Schedule) -> bool:
+    rates = {inst.annual_rate for inst in schedule.installments}
+    return len(rates) > 1
+
+
 def render_schedule(schedule: Schedule, *, use_rich: bool = True) -> None:
     req = schedule.request
     method_label = {
         "equal-principal": "等额本金",
         "equal-installment": "等额本息",
+        "variable-installment": "浮动利率等额本息",
     }.get(req.method, req.method)
 
+    rate_info = f"封顶利率 {req.annual_rate}%" if _has_variable_rate(schedule) else f"年利率 {req.annual_rate}%"
     title = (
         f"还款计划 — {method_label} | "
         f"本金 ¥{req.principal:,.2f} | "
-        f"年利率 {req.annual_rate}% | "
+        f"{rate_info} | "
         f"期限 {req.months} 期"
     )
 
@@ -36,40 +43,66 @@ def render_schedule(schedule: Schedule, *, use_rich: bool = True) -> None:
 
 
 def _render_rich(schedule: Schedule, title: str) -> None:
+    variable = _has_variable_rate(schedule)
     table = Table(title=title, box=box.SIMPLE_HEAVY, show_lines=False, highlight=True)
     table.add_column("期数", justify="right", style="bold")
     table.add_column("月供(元)", justify="right")
     table.add_column("还本金(元)", justify="right", style="green")
     table.add_column("还利息(元)", justify="right", style="yellow")
     table.add_column("剩余本金(元)", justify="right")
+    if variable:
+        table.add_column("年利率(%)", justify="right", style="magenta")
 
+    prev_rate = None
     for inst in schedule.installments:
-        table.add_row(
+        rate_changed = variable and inst.annual_rate != prev_rate
+        rate_cell = str(inst.annual_rate) if rate_changed else ""
+        row = (
             str(inst.period),
             f"{inst.payment:>12,.2f}",
             f"{inst.principal:>12,.2f}",
             f"{inst.interest:>12,.2f}",
             f"{inst.remaining:>14,.2f}",
         )
+        if variable:
+            style = "bold magenta" if rate_changed else None
+            table.add_row(*row, rate_cell, style=style)
+        else:
+            table.add_row(*row)
+        prev_rate = inst.annual_rate
 
     _CONSOLE.print(table)
 
 
 def _render_plain(schedule: Schedule, title: str) -> None:
+    variable = _has_variable_rate(schedule)
     print(title)
-    print("-" * 80)
+    sep = "-" * (80 + 12 if variable else 80)
+    print(sep)
     header = f"{'期数':>4}  {'月供':>12}  {'还本金':>12}  {'还利息':>12}  {'剩余本金':>14}"
+    if variable:
+        header += f"  {'年利率':>6}"
     print(header)
-    print("-" * 80)
+    print(sep)
+
+    prev_rate = None
     for inst in schedule.installments:
-        print(
+        rate_changed = variable and inst.annual_rate != prev_rate
+        line = (
             f"{inst.period:>4}  "
             f"{inst.payment:>12,.2f}  "
             f"{inst.principal:>12,.2f}  "
             f"{inst.interest:>12,.2f}  "
             f"{inst.remaining:>14,.2f}"
         )
-    print("-" * 80)
+        if variable:
+            rate_str = f"  {inst.annual_rate:>6}%" if rate_changed else ""
+            mark = "  <- 利率变更" if rate_changed and prev_rate is not None else ""
+            print(f"{line}{rate_str}{mark}")
+        else:
+            print(line)
+        prev_rate = inst.annual_rate
+    print(sep)
 
 
 def _render_summary(schedule: Schedule) -> None:

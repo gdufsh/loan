@@ -49,6 +49,7 @@ class EqualInstallmentStrategy(RepaymentStrategy):
                     principal=principal_this,
                     interest=interest_this,
                     remaining=remaining,
+                    annual_rate=request.annual_rate,
                 )
             )
 
