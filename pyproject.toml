@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "loan"
+version = "0.1.0"
+description = "贷款还款计划计算器，支持等额本金和等额本息两种还款方式"
+requires-python = ">=3.10"
+dependencies = [
+    "rich>=13.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+]
+
+[project.scripts]
+loan = "loan.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/loan"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=loan --cov-report=term-missing --cov-fail-under=80"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
